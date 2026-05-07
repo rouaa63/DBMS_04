@@ -662,10 +662,23 @@ Use a set-difference approach with `EXCEPT` and also write an alternative using
 
 ```sql
 -- Variant 1: EXCEPT
--- Query 5c-1: insert here
+-- Query 5c-1: SELECT plate, model
+FROM vehicle
+
+EXCEPT
+
+SELECT v.plate, v.model
+FROM vehicle v
+JOIN "order" o ON v.plate = o.plate;
 
 -- Variant 2: NOT EXISTS
--- Query 5c-2: insert here
+-- Query 5c-2: SELECT v.plate, v.model
+FROM vehicle v
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM "order" o
+    WHERE o.plate = v.plate
+);
 ```
 
 <details>
