@@ -577,7 +577,7 @@ Write the relational algebra expression first (in words or formal notation),
 then the SQL query.
 
 ```sql
--- Query 5a: insert here
+-- Query 5a: 
 SELECT 
     o.order_no,
     o.date,
@@ -620,7 +620,17 @@ place), and `orders` (the number of distinct orders in which the mechanic had at
 least one work item). Sort descending by `total_hours`.
 
 ```sql
--- Query 5b: insert here
+-- Query 5b: 
+SELECT 
+    m.mech_name,
+    ROUND(SUM(w.hours), 1) AS total_hours,
+    COUNT(DISTINCT o.order_no) AS orders
+FROM mechanic m
+JOIN work_item w ON m.mech_id = w.mech_id
+JOIN "order" o ON w.order_no = o.order_no
+WHERE o.date BETWEEN '2026-03-01' AND '2026-03-31'
+GROUP BY m.mech_name
+ORDER BY total_hours DESC;
 ```
 
 <details>
