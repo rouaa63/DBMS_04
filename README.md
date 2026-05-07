@@ -100,6 +100,14 @@ Read the table carefully and describe one concrete example of each:
    deleted entirely?
 
 > *Your answers:*
+> Update anomaly:
+If mechanic Huber increases his hourly rate to 70.00, all rows containing Huber must be updated (e.g., both entries in order 1001 and order 1003). If one row is missed, inconsistent data occurs.
+
+Insert anomaly:
+A new mechanic cannot be added unless they are assigned to an existing order item. If they have no job yet, we cannot store their information without inserting a fake order.
+
+Delete anomaly:
+If order 1002 is deleted, all information about Novak, Jana and her vehicle may be partially lost, including work details and mechanic assignment.
 
 ### Task 1b – Write Down Functional Dependencies
 
@@ -113,6 +121,11 @@ Hints:
 - What only follows from the combination `(OrderNo, ItemNo)`?
 
 > *Your FD list:*
+> .CustNo → CustName, CustCity
+  .Plate → Make, Model, Year, CustNo
+  .MechID → MechName, HourlyRate 
+  .OrderNo → Date, Plate, CustNo
+  .(OrderNo, ItemNo) → Description, Hours, MechID
 
 ### Questions for Task 1
 
@@ -120,17 +133,27 @@ Hints:
 respect to the primary key `(OrderNo, ItemNo)`? Justify your answer using the
 definition from Lecture 04.
 
-> *Your answer:*
+> *Your answer:*   CustNo → CustCity is a partial dependency because CustNo is only part of the composite primary key (OrderNo, ItemNo).
+Therefore, it violates 2NF, since non-key attributes depend only on part of the key.
 
 **Question 1.2:** Identify a transitive dependency in the flat table and explain
 why it violates 3NF.
 
-> *Your answer:*
+> *Your answer:*   A transitive dependency is:
+
+OrderNo → CustNo → CustCity
+
+This violates 3NF because CustCity depends on CustNo, not directly on the key (OrderNo, ItemNo). This creates redundancy and update anomalies.
 
 **Question 1.3:** Compute the attribute closure $\{\mathrm{OrderNo}\}^+$ using
 your FD list. Is `OrderNo` alone a superkey of the flat table?
 
-> *Your answer:*
+> *Your answer:*  Closure of OrderNo:
+
+OrderNo⁺ = {OrderNo, Date, Plate, CustNo, CustName, CustCity, Make, Model, Year}
+
+OrderNo alone is not a superkey, because it does not determine ItemNo, Description, Hours, or MechID.
+Therefore, OrderNo is not sufficient to uniquely identify tuples in the flat table.
 
 ---
 
@@ -182,7 +205,12 @@ $$R_1 \cap R_2 \rightarrow R_1 \setminus R_2 \quad \text{or} \quad R_1 \cap R_2 
 Name the shared attributes, state the FD you rely on, and conclude whether the
 decomposition is lossless.
 
-> *Your verification:*
+> *Your verification:*   The decomposition is lossless because:
+
+R1 ∩ R2 = CustNo
+CustNo → Customer attributes
+
+Since the intersection functionally determines one side, the join is lossless.
 
 ### Questions for Task 2
 
@@ -191,20 +219,28 @@ though the customer is also reachable via the vehicle's licence plate?
 Describe a realistic scenario where the direct link `order → customer` is
 necessary.
 
-> *Your answer:*
+> *Your answer:*  Keeping CustNo in Order is necessary because an order must always reference the customer directly.
+Even if vehicle information changes or is deleted, historical orders must remain linked to the correct customer.
+This ensures data integrity and traceability of business transactions.
 
 **Question 2.2:** Is the schema after the 3NF decomposition also in BCNF?
 Justify your answer using the definition: for every non-trivial FD $X \rightarrow Y$,
 $X$ must be a superkey.
 
-> *Your answer:*
+> *Your answer:*  Yes, the schema is in BCNF because in every relation, all functional dependencies have a superkey on the left-hand side.
+There are no dependencies where a non-key attribute determines another attribute.
 
 **Question 2.3:** The hourly rate of a mechanic is stored in `mechanic`. If a
 mechanic changes their rate during the year, what problem arises for already
 completed orders? How could the schema be extended to correctly record
 historical hourly rates?
 
-> *Your answer:*
+> *Your answer:*  If a mechanic changes their hourly rate, historical orders will incorrectly reflect the new rate instead of the rate at the time of service.
+To fix this, a separate table such as:
+
+Mechanic_Rate(mech_id, rate, valid_from, valid_to)
+
+should be introduced to store rate history.
 
 ---
 
@@ -490,7 +526,11 @@ git commit -m "feat: DDL and sample data for normalized workshop schema"
 Justify both choices in terms of the domain — what does it mean for the
 business if an order is deleted versus if a customer is deleted?
 
-> *Your answer:*
+> *Your answer:*  ON DELETE CASCADE (work_item.order_no):
+If an order is deleted, all related work items should also be deleted because they have no meaning without the order.
+
+ON DELETE RESTRICT (vehicle.cust_no):
+A customer cannot be deleted if vehicles still exist, because vehicles depend on the customer for ownership.
 
 **Question 4.2:** Test referential integrity by running:
 
@@ -502,7 +542,12 @@ INSERT INTO work_item VALUES (9999, 1, 3, 'Ghost item', 1.0);
 What error do you get? What does this tell you about the difference between
 a constraint declared in DDL and one that is actually enforced at runtime?
 
-> *Your answer:*
+> *Your answer:*  The error is:
+
+FOREIGN KEY constraint failed
+
+This shows that SQLite enforces referential integrity at runtime.
+A constraint defined in DDL is only effective if foreign keys are enabled (PRAGMA foreign_keys = ON).
 
 **Question 4.3:** Test the CHECK constraint:
 
@@ -512,7 +557,9 @@ INSERT INTO work_item VALUES (1001, 3, 3, 'Invalid', -0.5);
 
 What happens? What would happen if the CHECK constraint were missing?
 
-> *Your answer:*
+> *Your answer:*   The insertion fails due to CHECK constraint violation.
+
+If the CHECK constraint were missing, negative hours could be inserted, leading to invalid business data.
 
 ---
 
@@ -545,7 +592,11 @@ order 1003 (BMW 320i, 2026-03-12).
 `work_item`). In what order would the query optimizer ideally perform the joins —
 and why does the join order not affect the *result*, but does affect *performance*?
 
-> *Your answer:*
+> *Your answer:*    Join order (optimal):
+
+customer → order → vehicle → work_item
+
+Because filtering early reduces intermediate result size and improves performance.
 
 ---
 
@@ -574,7 +625,8 @@ least one work item). Sort descending by `total_hours`.
 What would `COUNT(*)` count instead, and why would the result differ in this
 case?
 
-> *Your answer:*
+> *Your answer:*   COUNT(DISTINCT order_no) counts unique orders per mechanic.
+COUNT(*) would count all work items instead, which inflates results because one order can have multiple items.
 
 ---
 
@@ -612,7 +664,8 @@ After that, the query should return `BOT-ZZ 1 | Yaris`.
 always produce the same result. Are there situations where one approach should
 be preferred in practice? Consider readability and extensibility.
 
-> *Your answer:*
+> *Your answer:*    EXCEPT is usually more readable for set-based logic.
+NOT EXISTS is better when working with complex conditions or large datasets and is often more efficient in correlated queries.
 
 ---
 
@@ -632,14 +685,16 @@ The original flat table had 5 rows and 15 columns. The normalized schema has
 5 tables. At which data volume does normalization pay off most — at 5 rows or
 at 50,000? Justify with concrete reference to the anomalies from Task 1a.
 
-> *Your answer:*
+> *Your answer:*   Normalization is more beneficial at large scale (e.g. 50,000 rows) because redundancy leads to serious update anomalies, inconsistent data, and higher storage cost.
+At small scale, the impact is minimal.
 
 **Question B – 3NF vs. BCNF:**  
 Lecture 04 explains that BCNF is not always dependency-preserving. Is this
 relevant for the workshop schema? Would a BCNF decomposition have looked
 different from the 3NF decomposition here?
 
-> *Your answer:*
+> *Your answer:*   BCNF is not strictly necessary here because the schema already satisfies 3NF and no dependency violates BCNF conditions.
+A BCNF decomposition would look similar to the 3NF result.
 
 **Question C – Redundant foreign key in `order`:**  
 `order` contains both `plate` (FK → `vehicle`) and `cust_no` (FK → `customer`).
@@ -647,7 +702,9 @@ Since `vehicle` itself contains `cust_no`, one might argue that `cust_no`
 in `order` is redundant and violates 3NF. Is that correct? When would such
 a deliberate denormalization be justified?
 
-> *Your answer:*
+> *Your answer:*   The apparent redundancy of cust_no in order is intentional.
+It ensures direct access to customer data even if vehicle relationships change.
+This is a controlled denormalization for performance and stability.
 
 **Question D – NULL and order status:**  
 An order that has just been created may have no work items yet. What does the
@@ -655,7 +712,12 @@ current schema say about this case? Would the schema need to be extended to
 correctly represent an order's status (open / completed)? Sketch the necessary
 change.
 
-> *Your answer:*
+> *Your answer:*    The schema does not represent order status.
+An additional attribute like:
+
+status (open, completed)
+
+should be added to the order table, or a separate status history table should be introduced.
 
 > **Screenshot 4:** Take a screenshot showing the output of Query 5b directly
 > in `sqlite3` (with `.headers on` and `.mode column` activated).
