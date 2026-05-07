@@ -312,7 +312,8 @@ scp <username>@<server>:/path/to/DBMS_04/schema.svg ~/Downloads/schema.svg
 > **Screenshot 2:** Take a screenshot showing the rendered diagram with all
 > five entities and their relationships.
 >
-> `[insert screenshot]`
+> `[insert screenshot]`    <img width="1920" height="1020" alt="Screen 2 D4" src="https://github.com/user-attachments/assets/1e8dde93-c10e-42fc-83bc-c6796f9cfd6e" />
+
 
 ### Task 3c – Commit
 
@@ -413,7 +414,7 @@ sqlite3 workshop.db ".tables"
 
 > **Screenshot 3:** Take a screenshot showing the `.tables` output.
 >
-> `[insert screenshot]`
+> `[insert screenshot]`    <img width="1231" height="580" alt="Screen 3  D4" src="https://github.com/user-attachments/assets/9b5e5406-ac20-4324-9e9c-e6de0bf5d2a1" />
 
 ### Task 4c – Insert Sample Data
 
@@ -659,7 +660,8 @@ change.
 > **Screenshot 4:** Take a screenshot showing the output of Query 5b directly
 > in `sqlite3` (with `.headers on` and `.mode column` activated).
 >
-> `[insert screenshot]`
+> `[insert screenshot]`     <img width="1604" height="585" alt="لقطة شاشة 2026-05-07 213208" src="https://github.com/user-attachments/assets/7f63bfde-979d-4863-82ce-56ee65876bb3" />
+
 
 ---
 
