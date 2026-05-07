@@ -578,6 +578,18 @@ then the SQL query.
 
 ```sql
 -- Query 5a: insert here
+SELECT 
+    o.order_no,
+    o.date,
+    o.plate,
+    w.description,
+    w.hours
+FROM customer c
+JOIN "order" o ON c.cust_no = o.cust_no
+JOIN vehicle v ON o.plate = v.plate
+JOIN work_item w ON o.order_no = w.order_no
+WHERE c.cust_name = 'Berger, Franz'
+ORDER BY o.date, w.item_no;
 ```
 
 <details>
