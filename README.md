@@ -178,7 +178,7 @@ then fill in the table below.
 Check: In every relation, does each non-key attribute depend on the **complete**
 primary key?
 
-> *Your check:*
+> *Your check:*  Yes, after decomposition into 2NF, all partial dependencies are removed and every non-key attribute depends on the full primary key in each relation.
 
 ### Task 2b – Decompose into 3NF
 
